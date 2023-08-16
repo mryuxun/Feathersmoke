@@ -1,9 +1,18 @@
 server:
   port: 8080
 spring:
+
+
   application:
     #应用名称，可更改
     name: reggie_take_out
+
+  redis:
+    host: 192.168.112.129
+    port: 6379
+    password: root@liao83823
+    database: 0
+
   datasource:
     druid:
       driver-class-name: com.mysql.cj.jdbc.Driver
