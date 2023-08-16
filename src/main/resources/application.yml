@@ -8,10 +8,10 @@ spring:
     name: reggie_take_out
 
   redis:
-    host: 192.168.112.129
-    port: 6379
-    password: root@liao83823
-    database: 0
+   host: localhost
+   port: 6379
+   # password: root@liao83823
+   database: 0
 
   datasource:
     druid:

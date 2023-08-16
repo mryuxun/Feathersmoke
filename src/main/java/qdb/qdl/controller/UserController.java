@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,6 +19,7 @@ import qdb.qdl.utils.ValidateCodeUtils;
 
 import javax.servlet.http.HttpSession;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/user")
@@ -26,6 +28,8 @@ public class UserController {
 
     @Autowired
     private UserService userService;
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     //手机短信验证码
     @PostMapping("/sendMsg")
@@ -40,7 +44,15 @@ public class UserController {
             //调用阿里云短信服务
          //   SMSUtils.sendMessage("瑞吉外卖","瑞吉外卖",phone,yzm);
             //保存验证码到session
-            session.setAttribute(phone,yzm);
+        //    session.setAttribute(phone,yzm);
+
+//将生成的验证码缓存到Redis中，并且设置有效期为5分钟
+
+            redisTemplate.opsForValue().set(phone,yzm,5, TimeUnit.MINUTES);
+log.info("运行到了");
+
+
+
             return R.success("手机验证码发送成功");
         }
         return R.success("手机验证码发送失败");
@@ -56,7 +68,12 @@ public class UserController {
         //获取验证码
         String code =user.get("code").toString();
         //获取session中的验证码
-        Object codoInSession=session.getAttribute(phone);
+     // session.getAttribute(phone);
+
+
+        //从Redis中获取缓存的验证码
+        Object codoInSession=  redisTemplate.opsForValue().get(phone);
+
         //比对验证码
         if(codoInSession !=null && codoInSession.equals(code)){
             //比对成功，登入成功
@@ -70,6 +87,12 @@ public class UserController {
                 userService.save(user1);
             }
 session.setAttribute("user",user1.getId());
+
+            //如果用户登入成功，删除Redis中缓存的验证码
+            redisTemplate.delete(phone);
+
+
+
 return R.success(user1);
         }
         //判断当前手机号对应的用户是否为新用户，如果是自动完成注册
